@@ -402,6 +402,36 @@
             font-weight: 600;
             color: #003da5;
         }
+        
+        .trend-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+        }
+        
+        .trend-up {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .trend-down {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .trend-neutral {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .recent-stats {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
     </style>
 </head>
 <body>
@@ -434,6 +464,17 @@
                 </div>
                 
                 <div class="stats-grid" id="statsGrid"></div>
+                
+                <div class="player-table-section">
+                    <div class="table-header">
+                        <div class="table-title">Recent Form - Last 5 Games</div>
+                    </div>
+                    <div class="player-table-container">
+                        <table class="player-table" id="recentFormTable">
+                            <!-- Recent form table will be populated by JavaScript -->
+                        </table>
+                    </div>
+                </div>
                 
                 <div class="filters" id="filters">
                     <button class="filter-btn active" data-filter="all">All Players</button>
@@ -486,12 +527,9 @@
     </div>
 
     <script>
-        const GAMELOG_URL =
-        'https://docs.google.com/spreadsheets/d/e/2PACX-1vQnGUktmAi7tjoSwbwmq24s6Dp-nMHFmlNh2WpI0Pi6TqWCmmqinhXzH7zKjuxcXXp3LLy3ubYIi6zJ/pub?gid=709035437&single=true&output=csv';
-
-        const AVERAGES_URL =
-        'https://docs.google.com/spreadsheets/d/e/2PACX-1vQnGUktmAi7tjoSwbwmq24s6Dp-nMHFmlNh2WpI0Pi6TqWCmmqinhXzH7zKjuxcXXp3LLy3ubYIi6zJ/pub?gid=0&single=true&output=csv';
-       
+        const GAMELOG_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vQnGUktmAi7tjoSwbwmq24s6Dp-nMHFmlNh2WpI0Pi6TqWCmmqinhXzH7zKjuxcXXp3LLy3ubYIi6zJ/pub?gid=709035437&single=true&output=csv');
+        const AVERAGES_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vQnGUktmAi7tjoSwbwmq24s6Dp-nMHFmlNh2WpI0Pi6TqWCmmqinhXzH7zKjuxcXXp3LLy3ubYIi6zJ/pub?gid=0&single=true&output=csv');
+        
         // Player photos mapping
         const playerPhotos = {
             'Azariah': 'https://i.imgur.com/pg0f1Ay.jpg',
@@ -791,6 +829,7 @@
             
             renderPlayerTable();
             renderStatsCards(playerStats);
+            renderRecentFormTable(filteredData);
             renderScatterPlot(playerStats);
             renderBarChart(playerStats);
             renderLineChart(filteredData);
@@ -835,6 +874,81 @@
             `;
             
             document.getElementById('statsGrid').innerHTML = html;
+        }
+        
+        function renderRecentFormTable(data) {
+            const table = document.getElementById('recentFormTable');
+            const playerMap = {};
+            
+            // Group games by player
+            data.forEach(game => {
+                if (!playerMap[game.player]) {
+                    playerMap[game.player] = [];
+                }
+                if (game.mp >= 5) {
+                    playerMap[game.player].push(game);
+                }
+            });
+            
+            const headers = ['Player', 'Last 5 PPG', 'Season PPG', 'Trend', 'Last 5 RPG', 'Season RPG', 'Trend', 'Last 5 APG', 'Season APG', 'Trend'];
+            
+            let html = '<thead><tr>';
+            headers.forEach(h => html += `<th>${h}</th>`);
+            html += '</tr></thead><tbody>';
+            
+            Object.keys(playerMap).forEach(playerName => {
+                const games = playerMap[playerName];
+                
+                // Only show if player has at least 5 games
+                if (games.length < 5) return;
+                
+                // Get last 5 games
+                const last5 = games.slice(-5);
+                
+                // Calculate season averages
+                const seasonPPG = (games.reduce((sum, g) => sum + g.pts, 0) / games.length).toFixed(1);
+                const seasonRPG = (games.reduce((sum, g) => sum + g.trbs, 0) / games.length).toFixed(1);
+                const seasonAPG = (games.reduce((sum, g) => sum + g.ast, 0) / games.length).toFixed(1);
+                
+                // Calculate last 5 averages
+                const last5PPG = (last5.reduce((sum, g) => sum + g.pts, 0) / 5).toFixed(1);
+                const last5RPG = (last5.reduce((sum, g) => sum + g.trbs, 0) / 5).toFixed(1);
+                const last5APG = (last5.reduce((sum, g) => sum + g.ast, 0) / 5).toFixed(1);
+                
+                // Calculate trends (comparing last 5 to season average)
+                const getTrend = (recent, season) => {
+                    const diff = ((recent - season) / season) * 100;
+                    if (diff > 10) return { class: 'trend-up', text: '↑ Hot', icon: '🔥' };
+                    if (diff < -10) return { class: 'trend-down', text: '↓ Cold', icon: '❄️' };
+                    return { class: 'trend-neutral', text: '→ Steady', icon: '➡️' };
+                };
+                
+                const ptsTrend = getTrend(parseFloat(last5PPG), parseFloat(seasonPPG));
+                const rebTrend = getTrend(parseFloat(last5RPG), parseFloat(seasonRPG));
+                const astTrend = getTrend(parseFloat(last5APG), parseFloat(seasonAPG));
+                
+                const photoUrl = playerPhotos[playerName];
+                
+                html += '<tr>';
+                html += `<td><div class="player-cell">`;
+                if (photoUrl) {
+                    html += `<img src="${photoUrl}" alt="${playerName}" class="player-photo">`;
+                }
+                html += `<span class="player-name" onclick="showPlayerGameLog('${playerName}')">${playerName}</span></div></td>`;
+                html += `<td>${last5PPG}</td>`;
+                html += `<td>${seasonPPG}</td>`;
+                html += `<td><span class="trend-indicator ${ptsTrend.class}">${ptsTrend.icon} ${ptsTrend.text}</span></td>`;
+                html += `<td>${last5RPG}</td>`;
+                html += `<td>${seasonRPG}</td>`;
+                html += `<td><span class="trend-indicator ${rebTrend.class}">${rebTrend.icon} ${rebTrend.text}</span></td>`;
+                html += `<td>${last5APG}</td>`;
+                html += `<td>${seasonAPG}</td>`;
+                html += `<td><span class="trend-indicator ${astTrend.class}">${astTrend.icon} ${astTrend.text}</span></td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody>';
+            table.innerHTML = html;
         }
         
         function renderScatterPlot(playerStats) {
