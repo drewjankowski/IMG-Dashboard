@@ -527,8 +527,8 @@
     </div>
 
     <script>
-        const GAMELOG_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vQnGUktmAi7tjoSwbwmq24s6Dp-nMHFmlNh2WpI0Pi6TqWCmmqinhXzH7zKjuxcXXp3LLy3ubYIi6zJ/pub?gid=709035437&single=true&output=csv');
-        const AVERAGES_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vQnGUktmAi7tjoSwbwmq24s6Dp-nMHFmlNh2WpI0Pi6TqWCmmqinhXzH7zKjuxcXXp3LLy3ubYIi6zJ/pub?gid=0&single=true&output=csv');
+        const GAMELOG_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQnGUktmAi7tjoSwbwmq24s6Dp-nMHFmlNh2WpI0Pi6TqWCmmqinhXzH7zKjuxcXXp3LLy3ubYIi6zJ/pub?gid=709035437&single=true&output=csv';
+        const AVERAGES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQnGUktmAi7tjoSwbwmq24s6Dp-nMHFmlNh2WpI0Pi6TqWCmmqinhXzH7zKjuxcXXp3LLy3ubYIi6zJ/pub?gid=0&single=true&output=csv';
         
         // Player photos mapping
         const playerPhotos = {
@@ -549,49 +549,45 @@
         let currentView = 'totals';
         let currentProgressionStat = 'points';
         
-        async function loadData() {
-            try {
-                // Load game log data
-                Papa.parse(GAMELOG_URL, {
-                    download: true,
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: function(results) {
-                        allData = results.data.map(row => ({
-                            player: row.Player,
-                            team: row.Team,
-                            opp: row.Opp,
-                            mp: parseFloat(row.MP) || 0,
-                            pts: parseFloat(row.PTS) || 0,
-                            orb: parseFloat(row.ORB) || 0,
-                            drb: parseFloat(row.DRB) || 0,
-                            ast: parseFloat(row.AST) || 0,
-                            stl: parseFloat(row.STL) || 0,
-                            tov: parseFloat(row.TOV) || 0,
-                            fg: parseFloat(row.FG) || 0,
-                            fga: parseFloat(row.FGA) || 0,
-                            fgPct: parseFloat(row['FG%']) || 0,
-                            trbs: parseFloat(row.TRBS) || 0,
-                            pts40: parseFloat(row['PTS per 40']) || 0,
-                            reb40: parseFloat(row['REBS per 40']) || 0,
-                            ast40: parseFloat(row['AST per 40']) || 0,
-                            stl40: parseFloat(row['STL per 40']) || 0,
-                            tov40: parseFloat(row['TO per 40']) || 0,
-                            ptsPerFGA: parseFloat(row['Points per FG']) || 0,
-                            gameScore: parseFloat(row.GameScore) || 0,
-                            minThreshold: row['Min Threshold Indicator']
-                        })).filter(row => row.player && row.player.trim() !== '');
-                        
-                        // Load averages data
-                        loadAverages();
-                    },
-                    error: function(error) {
-                        showError('Error loading game log data: ' + error.message);
-                    }
-                });
-            } catch (error) {
-                showError('Error loading data');
-            }
+        function loadData() {
+            Papa.parse(GAMELOG_URL, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    console.log('Game log loaded successfully');
+                    allData = results.data.map(row => ({
+                        player: row.Player,
+                        team: row.Team,
+                        opp: row.Opp,
+                        mp: parseFloat(row.MP) || 0,
+                        pts: parseFloat(row.PTS) || 0,
+                        orb: parseFloat(row.ORB) || 0,
+                        drb: parseFloat(row.DRB) || 0,
+                        ast: parseFloat(row.AST) || 0,
+                        stl: parseFloat(row.STL) || 0,
+                        tov: parseFloat(row.TOV) || 0,
+                        fg: parseFloat(row.FG) || 0,
+                        fga: parseFloat(row.FGA) || 0,
+                        fgPct: parseFloat(row['FG%']) || 0,
+                        trbs: parseFloat(row.TRBS) || 0,
+                        pts40: parseFloat(row['PTS per 40']) || 0,
+                        reb40: parseFloat(row['REBS per 40']) || 0,
+                        ast40: parseFloat(row['AST per 40']) || 0,
+                        stl40: parseFloat(row['STL per 40']) || 0,
+                        tov40: parseFloat(row['TO per 40']) || 0,
+                        ptsPerFGA: parseFloat(row['Points per FG']) || 0,
+                        gameScore: parseFloat(row.GameScore) || 0,
+                        minThreshold: row['Min Threshold Indicator']
+                    })).filter(row => row.player && row.player.trim() !== '');
+                    
+                    loadAverages();
+                },
+                error: function(error) {
+                    console.error('Error loading game log:', error);
+                    showError('Unable to load game log data. Please make sure the Google Sheet is published to the web.');
+                }
+            });
         }
         
         function loadAverages() {
@@ -600,10 +596,7 @@
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    console.log('Raw averages data:', results.data);
-                    console.log('First row columns:', results.data[0] ? Object.keys(results.data[0]) : 'No data');
-                    console.log('First row data:', results.data[0]);
-                    
+                    console.log('Averages loaded successfully');
                     averagesData = results.data;
                     
                     document.getElementById('loading').style.display = 'none';
@@ -612,7 +605,8 @@
                     renderDashboard();
                 },
                 error: function(error) {
-                    showError('Error loading averages data: ' + error.message);
+                    console.error('Error loading averages:', error);
+                    showError('Unable to load averages data. Please make sure the Google Sheet is published to the web.');
                 }
             });
         }
@@ -681,42 +675,10 @@
             }
         }
         
-        function renderPerGameTable(table) {
-            const headers = ['Player', 'GP', 'MP', 'PTS', 'ORB', 'DRB', 'AST', 'STL', 'TOV', 'FG%', 'FG', 'FGA'];
-            
-            let html = '<thead><tr>';
-            headers.forEach(h => html += `<th>${h}</th>`);
-            html += '</tr></thead><tbody>';
-            
-            averagesData.forEach(player => {
-                // Skip if no player name
-                if (!player.Player || player.Player.trim() === '') return;
-                
-                html += '<tr>';
-                html += `<td class="player-name">${player.Player}</td>`;
-                html += `<td>${player.GP || 'N/A'}</td>`;
-                html += `<td>${player.MP ? parseFloat(player.MP).toFixed(1) : 'N/A'}</td>`;
-                html += `<td>${player.PTS ? parseFloat(player.PTS).toFixed(1) : 'N/A'}</td>`;
-                html += `<td>${player.ORB ? parseFloat(player.ORB).toFixed(1) : 'N/A'}</td>`;
-                html += `<td>${player.DRB ? parseFloat(player.DRB).toFixed(1) : 'N/A'}</td>`;
-                html += `<td>${player.AST ? parseFloat(player.AST).toFixed(1) : 'N/A'}</td>`;
-                html += `<td>${player.STL ? parseFloat(player.STL).toFixed(1) : 'N/A'}</td>`;
-                html += `<td>${player.TOV ? parseFloat(player.TOV).toFixed(1) : 'N/A'}</td>`;
-                html += `<td>${player['FG%'] ? (parseFloat(player['FG%']) * 100).toFixed(1) + '%' : 'N/A'}</td>`;
-                html += `<td>${player.FG ? parseFloat(player.FG).toFixed(1) : 'N/A'}</td>`;
-                html += `<td>${player.FGA ? parseFloat(player.FGA).toFixed(1) : 'N/A'}</td>`;
-                html += '</tr>';
-            });
-            
-            html += '</tbody>';
-            table.innerHTML = html;
-        }
-        
         function renderTotalsTable(table) {
             const headers = ['Player', 'GP', 'MP', 'PTS', 'ORB', 'DRB', 'AST', 'STL', 'TOV', 'FG%', 'FG', 'FGA'];
             const filteredData = getFilteredData();
             
-            // Calculate totals per player
             const playerTotals = {};
             filteredData.forEach(game => {
                 if (!playerTotals[game.player]) {
@@ -777,7 +739,6 @@
             const headers = ['Player', 'GP', 'PTS', 'REB', 'AST', 'STL', 'TOV'];
             const filteredData = getFilteredData();
             
-            // Calculate per 40 averages per player
             const playerPer40 = {};
             filteredData.forEach(game => {
                 if (!playerPer40[game.player]) {
@@ -880,7 +841,6 @@
             const table = document.getElementById('recentFormTable');
             const playerMap = {};
             
-            // Group games by player
             data.forEach(game => {
                 if (!playerMap[game.player]) {
                     playerMap[game.player] = [];
@@ -899,23 +859,18 @@
             Object.keys(playerMap).forEach(playerName => {
                 const games = playerMap[playerName];
                 
-                // Only show if player has at least 5 games
                 if (games.length < 5) return;
                 
-                // Get last 5 games
                 const last5 = games.slice(-5);
                 
-                // Calculate season averages
                 const seasonPPG = (games.reduce((sum, g) => sum + g.pts, 0) / games.length).toFixed(1);
                 const seasonRPG = (games.reduce((sum, g) => sum + g.trbs, 0) / games.length).toFixed(1);
                 const seasonAPG = (games.reduce((sum, g) => sum + g.ast, 0) / games.length).toFixed(1);
                 
-                // Calculate last 5 averages
                 const last5PPG = (last5.reduce((sum, g) => sum + g.pts, 0) / 5).toFixed(1);
                 const last5RPG = (last5.reduce((sum, g) => sum + g.trbs, 0) / 5).toFixed(1);
                 const last5APG = (last5.reduce((sum, g) => sum + g.ast, 0) / 5).toFixed(1);
                 
-                // Calculate trends (comparing last 5 to season average)
                 const getTrend = (recent, season) => {
                     const diff = ((recent - season) / season) * 100;
                     if (diff > 10) return { class: 'trend-up', text: '↑ Hot', icon: '🔥' };
@@ -1117,7 +1072,6 @@
             const modalPlayerPhoto = document.getElementById('modalPlayerPhoto');
             const gameLogTable = document.getElementById('gameLogTable');
             
-            // Set player info
             modalPlayerName.textContent = playerName;
             const photoUrl = playerPhotos[playerName];
             if (photoUrl) {
@@ -1127,10 +1081,8 @@
                 modalPlayerPhoto.style.display = 'none';
             }
             
-            // Get all games for this player
             const playerGames = allData.filter(g => g.player === playerName && g.mp >= 5);
             
-            // Build game log table
             const headers = ['Game', 'Opp', 'MP', 'PTS', 'ORB', 'DRB', 'TRB', 'AST', 'STL', 'TOV', 'FG', 'FGA', 'FG%', 'GameScore'];
             
             let html = '<thead><tr>';
@@ -1159,7 +1111,6 @@
             html += '</tbody>';
             gameLogTable.innerHTML = html;
             
-            // Show modal
             modal.style.display = 'block';
         }
         
@@ -1167,7 +1118,6 @@
             document.getElementById('playerModal').style.display = 'none';
         }
         
-        // Close modal when clicking outside of it
         window.onclick = function(event) {
             const modal = document.getElementById('playerModal');
             if (event.target == modal) {
@@ -1175,17 +1125,14 @@
             }
         }
         
-        // View toggle buttons
         document.querySelectorAll('.view-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                // Handle table view toggles
                 if (btn.dataset.view) {
                     document.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     currentView = btn.dataset.view;
                     renderPlayerTable();
                 }
-                // Handle progression stat toggles
                 if (btn.dataset.stat) {
                     document.querySelectorAll('[data-stat]').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
@@ -1195,7 +1142,6 @@
             });
         });
         
-        // Filter buttons
         document.getElementById('filters').addEventListener('click', (e) => {
             if (e.target.classList.contains('filter-btn')) {
                 document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
